@@ -1,0 +1,9 @@
+[
+  {
+    "id": 1732184223125,
+    "name": "Alice",
+    "email": "alice@example.com",
+    "password": "$2b$10$HIcg2IYOVQBDn/LV55Vc9O0KmXltbWRohoKC5/RPLjKZiJ9tzQIv.",
+    "role": "Commuter"
+  }
+]
