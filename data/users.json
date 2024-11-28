@@ -5,5 +5,40 @@
     "email": "alice@example.com",
     "password": "$2b$10$HIcg2IYOVQBDn/LV55Vc9O0KmXltbWRohoKC5/RPLjKZiJ9tzQIv.",
     "role": "Commuter"
+  },
+  {
+    "firstname": "Test",
+    "lastname": "Test1",
+    "email": "test@example.com",
+    "phoneNumber": "071112345",
+    "password": "Test123"
+  },
+  {
+    "firstName": "Test",
+    "lastName": "Test2",
+    "email": "test2@example.com",
+    "phoneNumber": "0712345678",
+    "password": "Test2"
+  },
+  {
+    "firstname": "Test",
+    "lastname": "Test3",
+    "email": "test3@example.com",
+    "phoneNumber": "071112345",
+    "password": "Test123"
+  },
+  {
+    "firstname": "Test",
+    "lastname": "Test4",
+    "email": "test4@example.com",
+    "phoneNumber": "071112345",
+    "password": "Test123"
+  },
+  {
+    "firstname": "Test",
+    "lastname": "Test5",
+    "email": "test5@example.com",
+    "phoneNumber": "071112345",
+    "password": "$2b$10$4pJDE.8Kyr4KXFhOsvtyu.I7nPc/.BISTQ9Err8jP8a0diKD9lkAK"
   }
 ]

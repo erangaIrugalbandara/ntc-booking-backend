@@ -1,49 +1,105 @@
 const bcrypt = require('bcrypt');
-const { readFromFile, writeToFile } = require('./fileHelper');
+const jwt = require('jsonwebtoken');
+const { writeToFile, readFromFile, usersFilePath } = require('./fileHelper');
 
-const registerUser = (req, res) => {
-  let body = '';
-  req.on('data', chunk => (body += chunk.toString()));
-  req.on('end', async () => {
-    const { name, email, password, role } = JSON.parse(body);
+const secretKey = 'aP0^&kL!)9vH7#@2XyzR3$mnkQ!23dfX'; 
 
-    const users = readFromFile('users.json');
+const generateToken = (user) => {
+  return jwt.sign({ id: user.id, email: user.email }, secretKey, { expiresIn: '1h' });
+};
 
-    // Check if the user already exists
-    if (users.some(user => user.email === email)) {
-      res.statusCode = 400;
-      res.end(JSON.stringify({ message: 'User already exists!' }));
-      return;
+const validatePasswordStrength = (password) => {
+  const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+  return strongPasswordRegex.test(password);
+};
+
+// Register User
+const registerUser = async (req, res) => {
+  let body = "";
+  req.on("data", (chunk) => {
+    body += chunk;
+  });
+
+  req.on("end", async () => {
+    try {
+      const userData = JSON.parse(body);
+
+      if (!validatePasswordStrength(userData.password)) {
+        res.statusCode = 400;
+        res.end(JSON.stringify({ message: "Password is not strong enough." }));
+        return;
+      }
+
+      // Hash the password
+      const hashedPassword = await bcrypt.hash(userData.password, 10);
+
+      // Read existing users
+      const users = readFromFile(usersFilePath);
+
+      // Check if user already exists
+      const userExists = users.some((u) => u.email === userData.email);
+
+      if (userExists) {
+        res.statusCode = 400;
+        res.end(JSON.stringify({ message: "User already exists." }));
+        return;
+      }
+
+      // Add new user
+      const newUser = { ...userData, password: hashedPassword };
+      users.push(newUser);
+      writeToFile(usersFilePath, users);
+
+      res.statusCode = 201;
+      res.end(JSON.stringify({ message: "User registered successfully!" }));
+    } catch (error) {
+      res.statusCode = 500;
+      res.end(JSON.stringify({ message: "Error registering user." }));
     }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = { id: Date.now(), name, email, password: hashedPassword, role };
-
-    users.push(newUser);
-    writeToFile('users.json', users);
-
-    res.statusCode = 201;
-    res.end(JSON.stringify({ message: 'User registered successfully!' }));
   });
 };
 
+// Login User
 const loginUser = (req, res) => {
-  let body = '';
-  req.on('data', chunk => (body += chunk.toString()));
-  req.on('end', async () => {
-    const { email, password } = JSON.parse(body);
+  let body = "";
+  req.on("data", (chunk) => {
+    body += chunk;
+  });
 
-    const users = readFromFile('users.json');
-    const user = users.find(user => user.email === email);
+  req.on("end", async () => {
+    try {
+      const userData = JSON.parse(body);
 
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-      res.statusCode = 401;
-      res.end(JSON.stringify({ message: 'Invalid email or password!' }));
-      return;
+      // Read existing users
+      const users = readFromFile(usersFilePath);
+
+      // Check if user exists
+      const user = users.find((u) => u.email === userData.email);
+
+      if (!user) {
+        res.statusCode = 401;
+        res.end(JSON.stringify({ message: "Invalid credentials!" }));
+        return;
+      }
+
+      // Compare hashed passwords
+      const passwordMatch = await bcrypt.compare(userData.password, user.password);
+
+      if (!passwordMatch) {
+        res.statusCode = 401;
+        res.end(JSON.stringify({ message: "Invalid credentials!" }));
+        return;
+      }
+
+      // Generate JWT token
+      const token = generateToken(user);
+
+      res.statusCode = 200;
+      res.end(JSON.stringify({ message: "Login successful!", token }));
+    } catch (error) {
+      res.statusCode = 500;
+      res.end(JSON.stringify({ message: "Error logging in." }));
     }
-
-    res.statusCode = 200;
-    res.end(JSON.stringify({ message: 'Login successful!', user: { id: user.id, name: user.name, role: user.role } }));
   });
 };
 
