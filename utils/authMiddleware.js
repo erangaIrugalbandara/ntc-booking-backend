@@ -10,7 +10,7 @@ const verifyToken = (req, res, next) => {
     return;
   }
 
-  jwt.verify(token, secretKey, (err, decoded) => {
+  jwt.verify(token.split(' ')[1], secretKey, (err, decoded) => {
     if (err) {
       res.statusCode = 500;
       res.end(JSON.stringify({ message: "Failed to authenticate token." }));
@@ -18,8 +18,18 @@ const verifyToken = (req, res, next) => {
     }
 
     req.userId = decoded.id;
+    req.userRole = decoded.role;
     next();
   });
 };
 
-module.exports = verifyToken;
+const verifyAdmin = (req, res, next) => {
+  if (req.userRole !== 'admin') {
+    res.statusCode = 403;
+    res.end(JSON.stringify({ message: "Access denied." }));
+    return;
+  }
+  next();
+};
+
+module.exports = { verifyToken, verifyAdmin };

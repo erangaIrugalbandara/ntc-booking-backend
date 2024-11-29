@@ -40,5 +40,19 @@
     "email": "test5@example.com",
     "phoneNumber": "071112345",
     "password": "$2b$10$4pJDE.8Kyr4KXFhOsvtyu.I7nPc/.BISTQ9Err8jP8a0diKD9lkAK"
+  },
+  {
+    "firstName": "Admin",
+    "lastName": "User",
+    "email": "admin@example.com",
+    "password": "$2b$10$Asug8/uOZVv/TjBFa/z8NumEGqZQko0VPmoN.S37d082Qq/nfMvrW",
+    "role": "admin"
+  },
+  {
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "johndoe@bus.com",
+    "password": "$2b$10$tkD2nUe9XgrrlZh6QrzdDeMWXG7tOPKNPtTuNUUiYAHYZVHH4TBTi",
+    "role": "bus_operator"
   }
 ]

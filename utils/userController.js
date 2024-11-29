@@ -2,10 +2,10 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { writeToFile, readFromFile, usersFilePath } = require('./fileHelper');
 
-const secretKey = 'aP0^&kL!)9vH7#@2XyzR3$mnkQ!23dfX'; 
+const secretKey = 'your_secret_key'; // Replace with your secret key
 
 const generateToken = (user) => {
-  return jwt.sign({ id: user.id, email: user.email }, secretKey, { expiresIn: '1h' });
+  return jwt.sign({ id: user.id, email: user.email, role: user.role }, secretKey, { expiresIn: '1h' });
 };
 
 const validatePasswordStrength = (password) => {
@@ -46,7 +46,7 @@ const registerUser = async (req, res) => {
       }
 
       // Add new user
-      const newUser = { ...userData, password: hashedPassword };
+      const newUser = { ...userData, password: hashedPassword, role: 'commuter' };
       users.push(newUser);
       writeToFile(usersFilePath, users);
 
@@ -103,4 +103,50 @@ const loginUser = (req, res) => {
   });
 };
 
-module.exports = { registerUser, loginUser };
+// Register Bus Operator
+const registerBusOperator = async (req, res) => {
+  let body = "";
+  req.on("data", (chunk) => {
+    body += chunk;
+  });
+
+  req.on("end", async () => {
+    try {
+      const userData = JSON.parse(body);
+
+      if (!validatePasswordStrength(userData.password)) {
+        res.statusCode = 400;
+        res.end(JSON.stringify({ message: "Password is not strong enough." }));
+        return;
+      }
+
+      // Hash the password
+      const hashedPassword = await bcrypt.hash(userData.password, 10);
+
+      // Read existing users
+      const users = readFromFile(usersFilePath);
+
+      // Check if user already exists
+      const userExists = users.some((u) => u.email === userData.email);
+
+      if (userExists) {
+        res.statusCode = 400;
+        res.end(JSON.stringify({ message: "User already exists." }));
+        return;
+      }
+
+      // Add new bus operator
+      const newUser = { ...userData, password: hashedPassword, role: 'bus_operator' };
+      users.push(newUser);
+      writeToFile(usersFilePath, users);
+
+      res.statusCode = 201;
+      res.end(JSON.stringify({ message: "Bus operator registered successfully!" }));
+    } catch (error) {
+      res.statusCode = 500;
+      res.end(JSON.stringify({ message: "Error registering bus operator." }));
+    }
+  });
+};
+
+module.exports = { registerUser, loginUser, registerBusOperator };

@@ -1,9 +1,13 @@
 const http = require("http");
 const url = require("url");
-const { registerUser, loginUser } = require("./utils/userController");
-const verifyToken = require("./utils/authMiddleware");
+const { registerUser, loginUser, registerBusOperator } = require("./utils/userController");
+const { verifyToken, verifyAdmin } = require("./utils/authMiddleware");
+const { initializeAdmin } = require("./utils/adminInitializer");
 
 const PORT = 5000;
+
+// Initialize default admin account
+initializeAdmin();
 
 const server = http.createServer((req, res) => {
   const parsedUrl = url.parse(req.url, true);
@@ -26,11 +30,11 @@ const server = http.createServer((req, res) => {
     registerUser(req, res);
   } else if (path === "/api/auth/login" && method === "POST") {
     loginUser(req, res);
-  } else if (path === "/api/protected" && method === "GET") {
+  } else if (path === "/api/operators" && method === "POST") {
     verifyToken(req, res, () => {
-      // Handle protected route
-      res.statusCode = 200;
-      res.end(JSON.stringify({ message: "This is a protected route." }));
+      verifyAdmin(req, res, () => {
+        registerBusOperator(req, res);
+      });
     });
   } else {
     res.statusCode = 404;
