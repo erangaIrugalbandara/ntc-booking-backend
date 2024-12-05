@@ -1,20 +1,27 @@
 const fs = require('fs');
 const path = require('path');
 
-// Helper to read from a file
-const readFromFile = (filename) => {
-  const filePath = path.join(__dirname, '../data', filename);
-  if (fs.existsSync(filePath)) {
-    const data = fs.readFileSync(filePath, 'utf8');
-    return JSON.parse(data);
-  }
-  return [];
-};
+const dataDir = path.join(__dirname, "..", "data");
+const usersFilePath = path.join(dataDir, "users.json");
+const busesFilePath = path.join(dataDir, 'buses.json');
+const routesFilePath = path.join(dataDir, 'routes.json');
 
-// Helper to write to a file
-const writeToFile = (filename, data) => {
-  const filePath = path.join(__dirname, '../data', filename);
+// Function to write data to file
+const writeToFile = (filePath, data) => {
+  if (!fs.existsSync(dataDir)) {
+    // Create the 'data' directory if it doesn't exist
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 };
 
-module.exports = { readFromFile, writeToFile };
+// Function to read data from a file
+const readFromFile = (filePath) => {
+  if (!fs.existsSync(filePath)) {
+    return [];
+  }
+  const data = fs.readFileSync(filePath, 'utf8');
+  return JSON.parse(data);
+};
+
+module.exports = { readFromFile, writeToFile, usersFilePath, busesFilePath, routesFilePath };

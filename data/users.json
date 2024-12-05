@@ -1,9 +1,16 @@
 [
   {
-    "id": 1732184223125,
-    "name": "Alice",
-    "email": "alice@example.com",
-    "password": "$2b$10$HIcg2IYOVQBDn/LV55Vc9O0KmXltbWRohoKC5/RPLjKZiJ9tzQIv.",
-    "role": "Commuter"
+    "firstName": "TestBus1",
+    "lastName": "Test1",
+    "email": "testbus1@bus.com",
+    "password": "$2b$10$mOyUuwy7kWfojRlg72Z4iuMMfYZ0WF1tMmaUetgWeDIB/Mvy71drS",
+    "role": "bus_operator"
+  },
+  {
+    "firstName": "TestBus1",
+    "lastName": "Test1",
+    "email": "testbus123@bus.com",
+    "password": "$2b$10$KFmhshKOEk4aV5g3nr.TyOaKtPAtqQW3V1rGbv/uayBoCL1hCOugi",
+    "role": "bus_operator"
   }
 ]
