@@ -1,6 +1,6 @@
 const http = require("http");
 const url = require("url");
-const { registerUser, loginUser, registerBusOperator } = require("./utils/userController");
+const { registerUser, loginUser, registerBusOperator, addBus, createRoute, getRoutes, addSchedule } = require("./utils/userController");
 const { verifyToken, verifyAdmin } = require("./utils/authMiddleware");
 const { initializeAdmin } = require("./utils/adminInitializer");
 
@@ -34,6 +34,29 @@ const server = http.createServer((req, res) => {
     verifyToken(req, res, () => {
       verifyAdmin(req, res, () => {
         registerBusOperator(req, res);
+      });
+    });
+  } else if (path === "/api/buses" && method === "POST") {
+    verifyToken(req, res, () => {
+      verifyAdmin(req, res, () => {
+        addBus(req, res);
+      });
+    });
+  } else if (path === "/api/routes" && method === "POST") {
+    verifyToken(req, res, () => {
+      verifyAdmin(req, res, () => {
+        createRoute(req, res);
+      });
+    });
+  } else if (path === "/api/routes" && method === "GET") {
+    verifyToken(req, res, () => {
+      getRoutes(req, res);
+    });
+  } else if (path.startsWith("/api/buses/") && path.endsWith("/schedules") && method === "POST") {
+    verifyToken(req, res, () => {
+      verifyAdmin(req, res, () => {
+        const busId = path.split("/")[3];
+        addSchedule(req, res, busId);
       });
     });
   } else {

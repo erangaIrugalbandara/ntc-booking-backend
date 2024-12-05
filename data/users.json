@@ -1,58 +1,16 @@
 [
   {
-    "id": 1732184223125,
-    "name": "Alice",
-    "email": "alice@example.com",
-    "password": "$2b$10$HIcg2IYOVQBDn/LV55Vc9O0KmXltbWRohoKC5/RPLjKZiJ9tzQIv.",
-    "role": "Commuter"
+    "firstName": "TestBus1",
+    "lastName": "Test1",
+    "email": "testbus1@bus.com",
+    "password": "$2b$10$mOyUuwy7kWfojRlg72Z4iuMMfYZ0WF1tMmaUetgWeDIB/Mvy71drS",
+    "role": "bus_operator"
   },
   {
-    "firstname": "Test",
-    "lastname": "Test1",
-    "email": "test@example.com",
-    "phoneNumber": "071112345",
-    "password": "Test123"
-  },
-  {
-    "firstName": "Test",
-    "lastName": "Test2",
-    "email": "test2@example.com",
-    "phoneNumber": "0712345678",
-    "password": "Test2"
-  },
-  {
-    "firstname": "Test",
-    "lastname": "Test3",
-    "email": "test3@example.com",
-    "phoneNumber": "071112345",
-    "password": "Test123"
-  },
-  {
-    "firstname": "Test",
-    "lastname": "Test4",
-    "email": "test4@example.com",
-    "phoneNumber": "071112345",
-    "password": "Test123"
-  },
-  {
-    "firstname": "Test",
-    "lastname": "Test5",
-    "email": "test5@example.com",
-    "phoneNumber": "071112345",
-    "password": "$2b$10$4pJDE.8Kyr4KXFhOsvtyu.I7nPc/.BISTQ9Err8jP8a0diKD9lkAK"
-  },
-  {
-    "firstName": "Admin",
-    "lastName": "User",
-    "email": "admin@example.com",
-    "password": "$2b$10$Asug8/uOZVv/TjBFa/z8NumEGqZQko0VPmoN.S37d082Qq/nfMvrW",
-    "role": "admin"
-  },
-  {
-    "firstName": "John",
-    "lastName": "Doe",
-    "email": "johndoe@bus.com",
-    "password": "$2b$10$tkD2nUe9XgrrlZh6QrzdDeMWXG7tOPKNPtTuNUUiYAHYZVHH4TBTi",
+    "firstName": "TestBus1",
+    "lastName": "Test1",
+    "email": "testbus123@bus.com",
+    "password": "$2b$10$KFmhshKOEk4aV5g3nr.TyOaKtPAtqQW3V1rGbv/uayBoCL1hCOugi",
     "role": "bus_operator"
   }
 ]
