@@ -1,10 +1,11 @@
 const bcrypt = require('bcrypt');
-const { writeToFile, readFromFile, usersFilePath } = require('./fileHelper');
+const connectDB = require('./db');
 
 const initializeAdmin = async () => {
-  const users = readFromFile(usersFilePath);
+  const db = await connectDB();
+  const usersCollection = db.collection('users');
 
-  const adminExists = users.some((u) => u.email === 'admin@example.com');
+  const adminExists = await usersCollection.findOne({ email: 'admin@example.com' });
 
   if (!adminExists) {
     const hashedPassword = await bcrypt.hash('Admin@123', 10);
@@ -15,8 +16,7 @@ const initializeAdmin = async () => {
       password: hashedPassword,
       role: 'admin'
     };
-    users.push(adminUser);
-    writeToFile(usersFilePath, users);
+    await usersCollection.insertOne(adminUser);
     console.log('Default admin account created.');
   }
 };

@@ -1,11 +1,12 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { writeToFile, readFromFile, usersFilePath, busesFilePath, routesFilePath } = require('./fileHelper');
+const { ObjectId } = require('mongodb');
+const connectDB = require('./db');
 
 const secretKey = 'aP0^&kL!)9vH7#@2XyzR3$mnkQ!23dfx'; 
 
 const generateToken = (user) => {
-  return jwt.sign({ id: user.id, email: user.email, role: user.role }, secretKey, { expiresIn: '1h' });
+  return jwt.sign({ id: user._id, email: user.email, role: user.role }, secretKey, { expiresIn: '1h' });
 };
 
 const validatePasswordStrength = (password) => {
@@ -30,14 +31,14 @@ const registerUser = async (req, res) => {
         return;
       }
 
+      const db = await connectDB();
+      const usersCollection = db.collection('users');
+
       // Hash the password
       const hashedPassword = await bcrypt.hash(userData.password, 10);
 
-      // Read existing users
-      const users = readFromFile(usersFilePath);
-
       // Check if user already exists
-      const userExists = users.some((u) => u.email === userData.email);
+      const userExists = await usersCollection.findOne({ email: userData.email });
 
       if (userExists) {
         res.statusCode = 400;
@@ -47,8 +48,7 @@ const registerUser = async (req, res) => {
 
       // Add new user
       const newUser = { ...userData, password: hashedPassword, role: 'commuter' };
-      users.push(newUser);
-      writeToFile(usersFilePath, users);
+      await usersCollection.insertOne(newUser);
 
       res.statusCode = 201;
       res.end(JSON.stringify({ message: "User registered successfully!" }));
@@ -70,11 +70,11 @@ const loginUser = (req, res) => {
     try {
       const userData = JSON.parse(body);
 
-      // Read existing users
-      const users = readFromFile(usersFilePath);
+      const db = await connectDB();
+      const usersCollection = db.collection('users');
 
       // Check if user exists
-      const user = users.find((u) => u.email === userData.email);
+      const user = await usersCollection.findOne({ email: userData.email });
 
       if (!user) {
         res.statusCode = 401;
@@ -120,14 +120,14 @@ const registerBusOperator = async (req, res) => {
         return;
       }
 
+      const db = await connectDB();
+      const usersCollection = db.collection('users');
+
       // Hash the password
       const hashedPassword = await bcrypt.hash(userData.password, 10);
 
-      // Read existing users
-      const users = readFromFile(usersFilePath);
-
       // Check if user already exists
-      const userExists = users.some((u) => u.email === userData.email);
+      const userExists = await usersCollection.findOne({ email: userData.email });
 
       if (userExists) {
         res.statusCode = 400;
@@ -137,8 +137,7 @@ const registerBusOperator = async (req, res) => {
 
       // Add new bus operator
       const newUser = { ...userData, password: hashedPassword, role: 'bus_operator' };
-      users.push(newUser);
-      writeToFile(usersFilePath, users);
+      await usersCollection.insertOne(newUser);
 
       res.statusCode = 201;
       res.end(JSON.stringify({ message: "Bus operator registered successfully!" }));
@@ -160,11 +159,11 @@ const createRoute = async (req, res) => {
     try {
       const routeData = JSON.parse(body);
 
-      // Read existing routes
-      const routes = readFromFile(routesFilePath);
+      const db = await connectDB();
+      const routesCollection = db.collection('routes');
 
       // Check if route already exists
-      const routeExists = routes.some((r) => r.from === routeData.from && r.to === routeData.to);
+      const routeExists = await routesCollection.findOne({ from: routeData.from, to: routeData.to });
 
       if (routeExists) {
         res.statusCode = 400;
@@ -174,8 +173,7 @@ const createRoute = async (req, res) => {
 
       // Add new route
       const newRoute = { from: routeData.from, to: routeData.to };
-      routes.push(newRoute);
-      writeToFile(routesFilePath, routes);
+      await routesCollection.insertOne(newRoute);
 
       res.statusCode = 201;
       res.end(JSON.stringify({ message: "Route created successfully!" }));
@@ -187,9 +185,11 @@ const createRoute = async (req, res) => {
 };
 
 // Get Routes
-const getRoutes = (req, res) => {
+const getRoutes = async (req, res) => {
   try {
-    const routes = readFromFile(routesFilePath);
+    const db = await connectDB();
+    const routesCollection = db.collection('routes');
+    const routes = await routesCollection.find().toArray();
     res.statusCode = 200;
     res.end(JSON.stringify(routes));
   } catch (error) {
@@ -215,14 +215,13 @@ const addBus = async (req, res) => {
         return;
       }
 
-      // Hash the password
-      const hashedPassword = await bcrypt.hash(busData.password, 10);
-
-      // Read existing users
-      const users = readFromFile(usersFilePath);
+      const db = await connectDB();
+      const usersCollection = db.collection('users');
+      const busesCollection = db.collection('buses');
+      const routesCollection = db.collection('routes');
 
       // Check if bus operator already exists
-      const userExists = users.some((u) => u.email === busData.email);
+      const userExists = await usersCollection.findOne({ email: busData.email });
 
       if (userExists) {
         res.statusCode = 400;
@@ -231,6 +230,7 @@ const addBus = async (req, res) => {
       }
 
       // Add new bus operator
+      const hashedPassword = await bcrypt.hash(busData.password, 10);
       const newUser = { 
         firstName: busData.firstName, 
         lastName: busData.lastName, 
@@ -238,17 +238,10 @@ const addBus = async (req, res) => {
         password: hashedPassword, 
         role: 'bus_operator' 
       };
-      users.push(newUser);
-      writeToFile(usersFilePath, users);
-
-      // Read existing buses
-      const buses = readFromFile(busesFilePath);
-
-      // Read existing routes
-      const routes = readFromFile(routesFilePath);
+      await usersCollection.insertOne(newUser);
 
       // Check if route exists
-      const route = routes.find(r => r.from === busData.from && r.to === busData.to);
+      const route = await routesCollection.findOne({ from: busData.from, to: busData.to });
       if (!route) {
         res.statusCode = 400;
         res.end(JSON.stringify({ message: "Route does not exist." }));
@@ -257,14 +250,12 @@ const addBus = async (req, res) => {
 
       // Add new bus
       const newBus = { 
-        id: buses.length + 1, // Assign a unique ID to the bus
         registrationNumber: busData.registrationNumber, 
         route: route, 
         schedules: [], // Initialize with an empty array
         operator: newUser 
       };
-      buses.push(newBus);
-      writeToFile(busesFilePath, buses);
+      await busesCollection.insertOne(newBus);
 
       res.statusCode = 201;
       res.end(JSON.stringify({ message: "Bus added successfully!" }));
@@ -275,8 +266,9 @@ const addBus = async (req, res) => {
   });
 };
 
-// Add Schedule
-const addSchedule = async (req, res, busId) => {
+// Add Schedule to Bus
+const addSchedule = async (req, res) => {
+  const busId = req.url.split('/')[3]; // Extract bus ID from URL
   let body = "";
   req.on("data", (chunk) => {
     body += chunk;
@@ -286,11 +278,11 @@ const addSchedule = async (req, res, busId) => {
     try {
       const scheduleData = JSON.parse(body);
 
-      // Read existing buses
-      const buses = readFromFile(busesFilePath);
+      const db = await connectDB();
+      const busesCollection = db.collection('buses');
 
       // Find the bus by ID
-      const bus = buses.find(b => b.id === parseInt(busId));
+      const bus = await busesCollection.findOne({ registrationNumber: busId });
       if (!bus) {
         res.statusCode = 404;
         res.end(JSON.stringify({ message: "Bus not found." }));
@@ -298,8 +290,10 @@ const addSchedule = async (req, res, busId) => {
       }
 
       // Add new schedules to the bus
-      bus.schedules.push(...scheduleData.schedules);
-      writeToFile(busesFilePath, buses);
+      await busesCollection.updateOne(
+        { registrationNumber: busId },
+        { $push: { schedules: { $each: scheduleData.schedules } } }
+      );
 
       res.statusCode = 201;
       res.end(JSON.stringify({ message: "Schedules added successfully!" }));
