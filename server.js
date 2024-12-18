@@ -4,8 +4,8 @@ const url = require("url");
 const { registerUser, loginUser, registerBusOperator, addBus, createRoute, getRoutes, addSchedule, getBuses } = require("./utils/userController");
 const { verifyToken, verifyAdmin } = require("./utils/authMiddleware");
 const { initializeAdmin } = require("./utils/adminInitializer");
+const { getLayouts, addLayout } = require("./utils/layoutModel");
 const connectDB = require('./utils/db.js');
-const { getLayouts } = require('./utils/layoutModel.js');
 
 const PORT = process.env.PORT || 5000;
 
@@ -58,8 +58,19 @@ const server = http.createServer((req, res) => {
       });
     } else if (path === "/api/buses" && method === "POST") {
       verifyToken(req, res, () => {
-        verifyAdmin(req, res, () => {
-          addBus(req, res);
+        verifyAdmin(req, res, async () => {
+          try {
+            const { registrationNumber, from, to, layout, firstName, lastName, email, password } = req.body;
+            const db = await connectDB();
+            await db.collection('buses').insertOne({ registrationNumber, from, to, layout, firstName, lastName, email, password });
+            res.statusCode = 201;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ message: "Bus added successfully" }));
+          } catch (error) {
+            console.error("Error adding bus:", error);
+            res.statusCode = 500;
+            res.end(JSON.stringify({ message: "Error adding bus", error: error.message }));
+          }
         });
       });
     } else if (path === "/api/buses" && method === "GET") {
@@ -92,8 +103,7 @@ const server = http.createServer((req, res) => {
             console.log("Generated Layout:", layout); // Log the generated layout
             
             // Save the layout to the database
-            const db = await connectDB();
-            await db.collection('layouts').insertOne(layout);
+            await addLayout(layout);
 
             res.statusCode = 201;
             res.setHeader('Content-Type', 'application/json');
@@ -122,7 +132,7 @@ const server = http.createServer((req, res) => {
       });
     } else {
       res.statusCode = 404;
-      res.end(JSON.stringify({ message: "404 not found" }));
+      res.end(JSON.stringify({ message: "Route not found" }));
     }
   });
 });
