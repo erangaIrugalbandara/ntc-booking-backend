@@ -4,6 +4,8 @@ const url = require("url");
 const { registerUser, loginUser, registerBusOperator, addBus, createRoute, getRoutes, addSchedule, getBuses } = require("./utils/userController");
 const { verifyToken, verifyAdmin } = require("./utils/authMiddleware");
 const { initializeAdmin } = require("./utils/adminInitializer");
+const connectDB = require('./utils/db.js');
+const { getLayouts } = require('./utils/layoutModel.js');
 
 const PORT = process.env.PORT || 5000;
 
@@ -33,7 +35,7 @@ const server = http.createServer((req, res) => {
     body += chunk;
   });
 
-  req.on("end", () => {
+  req.on("end", async () => {
     if (body) {
       try {
         req.body = JSON.parse(body);
@@ -60,6 +62,10 @@ const server = http.createServer((req, res) => {
           addBus(req, res);
         });
       });
+    } else if (path === "/api/buses" && method === "GET") {
+      verifyToken(req, res, () => {
+        getBuses(req, res);
+      });
     } else if (path === "/api/routes" && method === "POST") {
       verifyToken(req, res, () => {
         verifyAdmin(req, res, () => {
@@ -70,10 +76,6 @@ const server = http.createServer((req, res) => {
       verifyToken(req, res, () => {
         getRoutes(req, res);
       });
-    } else if (path === "/api/buses" && method === "GET") {
-      verifyToken(req, res, () => {
-        getBuses(req, res);
-      });
     } else if (path.startsWith("/api/buses/") && path.endsWith("/schedules") && method === "POST") {
       verifyToken(req, res, () => {
         verifyAdmin(req, res, () => {
@@ -82,12 +84,56 @@ const server = http.createServer((req, res) => {
           addSchedule(req, res);
         });
       });
+    } else if (path === "/api/layouts" && method === "POST") {
+      verifyToken(req, res, () => {
+        verifyAdmin(req, res, async () => {
+          try {
+            const layout = generateSeatLayout(req.body);
+            console.log("Generated Layout:", layout); // Log the generated layout
+            
+            // Save the layout to the database
+            const db = await connectDB();
+            await db.collection('layouts').insertOne(layout);
+
+            res.statusCode = 201;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify(layout));
+          } catch (error) {
+            console.error("Error saving layout:", error);
+            res.statusCode = 500;
+            res.end(JSON.stringify({ message: "Error saving layout", error: error.message }));
+          }
+        });
+      });
+    } else if (path === "/api/layouts" && method === "GET") {
+      verifyToken(req, res, () => {
+        verifyAdmin(req, res, async () => {
+          try {
+            const layouts = await getLayouts();
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify(layouts));
+          } catch (error) {
+            console.error("Error retrieving layouts:", error);
+            res.statusCode = 500;
+            res.end(JSON.stringify({ message: "Error retrieving layouts", error: error.message }));
+          }
+        });
+      });
     } else {
       res.statusCode = 404;
-      res.end(JSON.stringify({ message: "Route not found" }));
+      res.end(JSON.stringify({ message: "404 not found" }));
     }
   });
 });
+
+const generateSeatLayout = ({ layoutName, rightSide, leftSide, backSeat }) => {
+  const rightSeats = Array(rightSide.rows).fill().map(() => Array(rightSide.seatsPerRow).fill('R'));
+  const leftSeats = Array(leftSide.rows).fill().map(() => Array(leftSide.seatsPerRow).fill('L'));
+  const backSeats = Array(backSeat.seats).fill('B');
+
+  return { layoutName, rightSeats, leftSeats, backSeats };
+};
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

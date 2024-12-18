@@ -1,6 +1,6 @@
 const { MongoClient } = require('mongodb');
 
-const uri = 'mongodb+srv://eranga:para2243047@cluster0.sbpyg.mongodb.net/';
+const uri = process.env.MONGODB_URI;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 
 let db;
