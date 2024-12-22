@@ -56,6 +56,25 @@ const server = http.createServer((req, res) => {
           registerBusOperator(req, res);
         });
       });
+    } else if (path === "/api/commuters" && method === "POST") {
+      try {
+        const { email, password } = req.body;
+        const db = await connectDB();
+        const existingUser = await db.collection('users').findOne({ email });
+        if (existingUser) {
+          res.statusCode = 400;
+          res.end(JSON.stringify({ message: "User already exists" }));
+          return;
+        }
+        await db.collection('users').insertOne({ email, password, role: 'commuter' });
+        res.statusCode = 201;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ message: "Commuter account created successfully" }));
+      } catch (error) {
+        console.error("Error creating commuter account:", error);
+        res.statusCode = 500;
+        res.end(JSON.stringify({ message: "Error creating commuter account", error: error.message }));
+      }
     } else if (path === "/api/buses" && method === "POST") {
       verifyToken(req, res, () => {
         verifyAdmin(req, res, async () => {
