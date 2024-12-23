@@ -16,47 +16,43 @@ const validatePasswordStrength = (password) => {
 
 // Register User
 const registerUser = async (req, res) => {
-  let body = "";
-  req.on("data", (chunk) => {
-    body += chunk;
-  });
+  try {
+    const userData = req.body;
+    console.log('Received user data:', userData);
 
-  req.on("end", async () => {
-    try {
-      const userData = JSON.parse(body);
-
-      if (!validatePasswordStrength(userData.password)) {
-        res.statusCode = 400;
-        res.end(JSON.stringify({ message: "Password is not strong enough." }));
-        return;
-      }
-
-      const db = await connectDB();
-      const usersCollection = db.collection('users');
-
-      // Hash the password
-      const hashedPassword = await bcrypt.hash(userData.password, 10);
-
-      // Check if user already exists
-      const userExists = await usersCollection.findOne({ email: userData.email });
-
-      if (userExists) {
-        res.statusCode = 400;
-        res.end(JSON.stringify({ message: "User already exists." }));
-        return;
-      }
-
-      // Add new user
-      const newUser = { ...userData, password: hashedPassword, role: 'commuter' };
-      await usersCollection.insertOne(newUser);
-
-      res.statusCode = 201;
-      res.end(JSON.stringify({ message: "User registered successfully!" }));
-    } catch (error) {
-      res.statusCode = 500;
-      res.end(JSON.stringify({ message: "Error registering user." }));
+    if (validatePasswordStrength(userData.password)) {
+      res.statusCode = 400;
+      res.end(JSON.stringify({ message: "Password is not strong enough." }));
+      return;
     }
-  });
+
+    const db = await connectDB();
+    const usersCollection = db.collection('users');
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(userData.password, 10);
+    console.log('Hashed Password:', hashedPassword); // Log the hashed password
+
+    // Check if user already exists
+    const userExists = await usersCollection.findOne({ email: userData.email });
+
+    if (userExists) {
+      res.statusCode = 400;
+      res.end(JSON.stringify({ message: "User already exists." }));
+      return;
+    }
+
+    // Add new user
+    const newUser = { ...userData, password: hashedPassword, role: 'commuter' };
+    await usersCollection.insertOne(newUser);
+
+    res.statusCode = 201;
+    res.end(JSON.stringify({ message: "User registered successfully!" }));
+  } catch (error) {
+    console.error('Error registering user:', error);
+    res.statusCode = 500;
+    res.end(JSON.stringify({ message: "Error registering user." }));
+  }
 };
 
 // Login User
@@ -71,6 +67,7 @@ const loginUser = async (req, res) => {
     const user = await usersCollection.findOne({ email: userData.email });
 
     if (!user) {
+      console.log("User not found");
       res.statusCode = 401;
       res.end(JSON.stringify({ message: "Invalid credentials!" }));
       return;
@@ -80,6 +77,7 @@ const loginUser = async (req, res) => {
     const passwordMatch = await bcrypt.compare(userData.password, user.password);
 
     if (!passwordMatch) {
+      console.log("Password does not match");
       res.statusCode = 401;
       res.end(JSON.stringify({ message: "Invalid credentials!" }));
       return;
@@ -89,7 +87,7 @@ const loginUser = async (req, res) => {
     const token = generateToken(user);
 
     res.statusCode = 200;
-    res.end(JSON.stringify({ message: "Login successful!", token }));
+    res.end(JSON.stringify({ message: "Login successful!", token, role: user.role }));
   } catch (error) {
     console.error('Error logging in:', error);
     res.statusCode = 500;
@@ -136,6 +134,7 @@ const registerBusOperator = async (req, res) => {
       res.statusCode = 201;
       res.end(JSON.stringify({ message: "Bus operator registered successfully!" }));
     } catch (error) {
+      console.error('Error registering bus operator:', error);
       res.statusCode = 500;
       res.end(JSON.stringify({ message: "Error registering bus operator." }));
     }
@@ -200,6 +199,7 @@ const addBus = async (req, res) => {
       registrationNumber: busData.registrationNumber, 
       from: busData.from, 
       to: busData.to, 
+      layout: busData.layout, // Ensure layout is included
       firstName: busData.firstName, 
       lastName: busData.lastName, 
       email: busData.email, 
@@ -278,4 +278,4 @@ const getBuses = async (req, res) => {
   }
 };
 
-module.exports = { loginUser, createRoute, getRoutes, addBus, addSchedule, getBuses };
+module.exports = { loginUser, registerUser, createRoute, getRoutes, addBus, addSchedule, getBuses, registerBusOperator };

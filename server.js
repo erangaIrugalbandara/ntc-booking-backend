@@ -46,9 +46,13 @@ const server = http.createServer((req, res) => {
       }
     }
 
+    console.log(`Received request: ${method} ${path}`);
+
     if (path === "/api/users" && method === "POST") {
+      console.log("Handling /api/users POST request");
       registerUser(req, res);
     } else if (path === "/api/auth/login" && method === "POST") {
+      console.log("Handling /api/auth/login POST request");
       loginUser(req, res);
     } else if (path === "/api/operators" && method === "POST") {
       verifyToken(req, res, () => {
@@ -56,25 +60,6 @@ const server = http.createServer((req, res) => {
           registerBusOperator(req, res);
         });
       });
-    } else if (path === "/api/commuters" && method === "POST") {
-      try {
-        const { email, password } = req.body;
-        const db = await connectDB();
-        const existingUser = await db.collection('users').findOne({ email });
-        if (existingUser) {
-          res.statusCode = 400;
-          res.end(JSON.stringify({ message: "User already exists" }));
-          return;
-        }
-        await db.collection('users').insertOne({ email, password, role: 'commuter' });
-        res.statusCode = 201;
-        res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({ message: "Commuter account created successfully" }));
-      } catch (error) {
-        console.error("Error creating commuter account:", error);
-        res.statusCode = 500;
-        res.end(JSON.stringify({ message: "Error creating commuter account", error: error.message }));
-      }
     } else if (path === "/api/buses" && method === "POST") {
       verifyToken(req, res, () => {
         verifyAdmin(req, res, async () => {
@@ -119,7 +104,7 @@ const server = http.createServer((req, res) => {
         verifyAdmin(req, res, async () => {
           try {
             const layout = generateSeatLayout(req.body);
-            console.log("Generated Layout:", layout); // Log the generated layout
+            console.log("Generated Layout:", layout); 
             
             // Save the layout to the database
             await addLayout(layout);
@@ -149,6 +134,20 @@ const server = http.createServer((req, res) => {
           }
         });
       });
+    } else if (path === "/api/cities" && method === "GET") {
+      try {
+        const db = await connectDB();
+        const busesCollection = db.collection('buses');
+        const fromCities = await busesCollection.distinct('from');
+        const toCities = await busesCollection.distinct('to');
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ fromCities, toCities }));
+      } catch (error) {
+        console.error("Error fetching cities:", error);
+        res.statusCode = 500;
+        res.end(JSON.stringify({ message: "Error fetching cities", error: error.message }));
+      }
     } else {
       res.statusCode = 404;
       res.end(JSON.stringify({ message: "Route not found" }));
