@@ -148,6 +148,35 @@ const server = http.createServer((req, res) => {
         res.statusCode = 500;
         res.end(JSON.stringify({ message: "Error fetching cities", error: error.message }));
       }
+    } else if (path === "/api/buses/search" && method === "POST") {
+      try {
+        const { from, to, date } = req.body;
+        const db = await connectDB();
+        const busesCollection = db.collection('buses');
+        const matchingBuses = await busesCollection.find({
+          $or: [
+            { from, to, 'schedules.date': date, 'schedules.direction': true },
+            { from: to, to: from, 'schedules.date': date, 'schedules.direction': false }
+          ]
+        }).toArray();
+        const busesWithSchedules = matchingBuses.map(bus => {
+          const schedule = bus.schedules.find(s => s.date === date && ((s.direction && bus.from === from && bus.to === to) || (!s.direction && bus.from === to && bus.to === from)));
+          return {
+            ...bus,
+            date: schedule.date,
+            departureTime: schedule.departureTime,
+            arrivalTime: schedule.arrivalTime,
+            direction: schedule.direction
+          };
+        });
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify(busesWithSchedules));
+      } catch (error) {
+        console.error("Error fetching matching buses:", error);
+        res.statusCode = 500;
+        res.end(JSON.stringify({ message: "Error fetching matching buses", error: error.message }));
+      }
     } else {
       res.statusCode = 404;
       res.end(JSON.stringify({ message: "Route not found" }));
