@@ -1,18 +1,20 @@
 require('dotenv').config();
 const http = require("http");
 const url = require("url");
-const { registerUser, loginUser, registerBusOperator, addBus, createRoute, getRoutes, addSchedule, getBuses } = require("./utils/userController");
+const { registerUser, loginUser, registerBusOperator, addBus, createRoute, getRoutes, getBuses, addSchedule, bookSeats } = require("./utils/userController");
 const { verifyToken, verifyAdmin } = require("./utils/authMiddleware");
 const { initializeAdmin } = require("./utils/adminInitializer");
 const { getLayouts, addLayout } = require("./utils/layoutModel");
 const connectDB = require('./utils/db.js');
+const { ObjectId } = require('mongodb');
+const WebSocket = require('ws');
 
 const PORT = process.env.PORT || 5000;
 
 // Initialize default admin account
 initializeAdmin();
 
-const server = http.createServer((req, res) => {
+const server = http.createServer(async (req, res) => {
   const parsedUrl = url.parse(req.url, true);
   const path = parsedUrl.pathname;
   const method = req.method;
@@ -93,10 +95,10 @@ const server = http.createServer((req, res) => {
       });
     } else if (path.startsWith("/api/buses/") && path.endsWith("/schedules") && method === "POST") {
       verifyToken(req, res, () => {
-        verifyAdmin(req, res, () => {
+        verifyAdmin(req, res, async () => {
           const busId = path.split("/")[3];
-          req.params = { busId }; 
-          addSchedule(req, res);
+          req.params = { busId };
+          await addSchedule(req, res);
         });
       });
     } else if (path === "/api/layouts" && method === "POST") {
@@ -134,6 +136,33 @@ const server = http.createServer((req, res) => {
           }
         });
       });
+    } else if (path.startsWith('/api/layouts/') && method === 'GET') {
+      const layoutId = path.split('/')[3];
+      if (!ObjectId.isValid(layoutId)) {
+        res.statusCode = 400;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ message: 'Invalid layout ID' }));
+        return;
+      }
+      try {
+        const db = await connectDB();
+        const layoutsCollection = db.collection('layouts');
+        const layout = await layoutsCollection.findOne({ _id: new ObjectId(layoutId) });
+        if (!layout) {
+          res.statusCode = 404;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ message: 'Layout not found' }));
+          return;
+        }
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify(layout));
+      } catch (error) {
+        console.error('Error fetching layout:', error);
+        res.statusCode = 500;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ message: 'Error fetching layout' }));
+      }
     } else if (path === "/api/cities" && method === "GET") {
       try {
         const db = await connectDB();
@@ -177,10 +206,22 @@ const server = http.createServer((req, res) => {
         res.statusCode = 500;
         res.end(JSON.stringify({ message: "Error fetching matching buses", error: error.message }));
       }
+    } else if (path === '/api/bookings' && method === 'POST') {
+      await bookSeats(req, res);
     } else {
       res.statusCode = 404;
-      res.end(JSON.stringify({ message: "Route not found" }));
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ message: 'Route not found' }));
     }
+  });
+});
+
+const wss = new WebSocket.Server({ server });
+
+wss.on('connection', ws => {
+  console.log('Client connected');
+  ws.on('close', () => {
+    console.log('Client disconnected');
   });
 });
 
