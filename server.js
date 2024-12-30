@@ -1,10 +1,13 @@
 require('dotenv').config();
 const http = require("http");
 const url = require("url");
-const { registerUser, loginUser, registerBusOperator, addBus, createRoute, getRoutes, getBuses, addSchedule, bookSeats } = require("./utils/userController");
+const { loginUser, registerUser, registerBusOperator } = require("./controllers/UserController");
+const { createRoute, getRoutes } = require("./controllers/RouteController");
+const { addBus, addSchedule, getBuses } = require("./controllers/BusController");
+const { bookSeats } = require("./controllers/BookingController");
 const { verifyToken, verifyAdmin } = require("./utils/authMiddleware");
 const { initializeAdmin } = require("./utils/adminInitializer");
-const { getLayouts, addLayout } = require("./utils/layoutModel");
+const { getLayouts, addLayout } = require("./models/LayoutModel.js");
 const connectDB = require('./utils/db.js');
 const { ObjectId } = require('mongodb');
 const WebSocket = require('ws');

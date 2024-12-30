@@ -1,4 +1,4 @@
-const connectDB = require('./db');
+const connectDB = require('../utils/db');
 
 const getLayouts = async () => {
   const db = await connectDB();
